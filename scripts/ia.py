@@ -14,7 +14,7 @@ import modeloClass as mc
 class CanvasIA:
 
     def __init__(self):
-        cv2.namedWindow('JFORdCP')
+        cv2.namedWindow('EoN')
 
         ####
 
@@ -44,10 +44,10 @@ class CanvasIA:
 
         self.bCar, self.bIni, self.bSal = False, False, False
         
-        self.bImg1 = cv2.resize(cv2.imread('assets/folder95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
-        self.bImg2 = cv2.resize(cv2.imread('assets/file95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
+        self.bImg1 = cv2.resize(cv2.imread('Image-Recognition/assets/folder95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
+        self.bImg2 = cv2.resize(cv2.imread('Image-Recognition/assets/file95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
 
-        cv2.setMouseCallback('JFORdCP', self.mouseEv)
+        cv2.setMouseCallback('EoN', self.mouseEv)
 
         ####
 
@@ -142,7 +142,7 @@ class CanvasIA:
             except:
                 pass
 
-            cv2.imshow('JFORdCP', canvas)
+            cv2.imshow('EoN', canvas)
 
             try:
                 pImg = pastaImg
@@ -176,7 +176,7 @@ class CanvasIA:
                     imgs_treinamento, nomes_treinamento = cin(pImg, tNomes)
 
                     modeloC = mc.construirModelo()
-                    modeloC.compile(optimizer='adafactor', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+                    modeloC.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
 
                     history = modeloC.fit(imgs_treinamento, nomes_treinamento, epochs=2)
 

@@ -10,9 +10,19 @@ def carregarDadosTreinamento(pastaImg, txtNomes):
 
 def construirModelo():
     modelo = tf.keras.Sequential([
-        tf.keras.layers.Flatten(input_shape=(640, 480)),
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(480, 640, 1)),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(7)  #limitado ao número de outputs
+        tf.keras.layers.Dropout(0.5),  # Regularization
+        tf.keras.layers.Dense(7)
     ])
 
     return modelo
