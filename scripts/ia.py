@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import time
 from carr import carregarImgNomes as cin
 import modeloClass as mc
-#from teste import Captura2
+from plotter import InitPlot
 
 class CanvasIA:
 
@@ -173,22 +173,25 @@ class CanvasIA:
                     pass
 
                 try:
-                    imgs_treinamento, nomes_treinamento = cin(pImg, tNomes)
-
+                    imgs_treinamento, nomes_treinamento = mc.carregarDadosTreinamento(pastaImg, txtNomes)
+                    augData = mc.augData(imgs_treinamento, nomes_treinamento)
                     modeloC = mc.construirModelo()
                     modeloC.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+                    #history = modeloC.fit(imgs_treinamento, nomes_treinamento, epochs=2)
+                    history = modeloC.fit(augData, epochs = 2)
 
-                    history = modeloC.fit(imgs_treinamento, nomes_treinamento, epochs=2)
-
-                    elapsed_time = time.time() - start_time
-
+                    stTime = time.time()
+                    elapsed_time = time.time() - stTime
+                                    
                     best_accuracy = max(history.history['accuracy'])
                     lowest_loss = min(history.history['loss'])
                     epochs_range = range(1, len(history.history['accuracy']) + 1)
-
+                    
                     self.treinamentoFinalizado = True
-
                     treinado = True
+
+                    plotter = InitPlot.displayPlot(history.history, epochs_range, elapsed_time)
+
 
                 except:
                     erroDir1, erroDir2 = True, True
@@ -220,37 +223,7 @@ class CanvasIA:
             if key == 32:
                 try:
 
-                    fig, ax1 = plt.subplots(figsize=(10, 6))
-
-                    ax1.set_xlabel('Épocas')
-                    ax1.set_ylabel('Erro', color='tab:red')
-                    ax1.plot(epochs_range, history.history['loss'], label='Erro', color='tab:red')
-                    ax1.tick_params(axis='y', labelcolor='tab:red')
-                    ax1.set_title(f'Erro e Precisão no treinamento\nMenor erro: {lowest_loss:.4f}, Maior precisão: {best_accuracy:.4f}')
-
-                    ax1.annotate(f'Menor erro: {lowest_loss:.4f}', 
-                                xy=(history.history['loss'].index(lowest_loss) + 1, lowest_loss),
-                                xytext=(history.history['loss'].index(lowest_loss) + 1.5, lowest_loss + 0.02),
-                                arrowprops=dict(facecolor='black', shrink=0.05))
-                    
-                    ax2 = ax1.twinx()  
-                    ax2.set_ylabel('Precisão', color='tab:blue')
-                    ax2.plot(epochs_range, history.history['accuracy'], label='Precisão', color='tab:blue')
-                    ax2.tick_params(axis='y', labelcolor='tab:blue')
-
-                    ax2.annotate(f'Maior precisão: {best_accuracy:.4f}', 
-                                xy=(history.history['accuracy'].index(best_accuracy) + 1, best_accuracy),
-                                xytext=(history.history['accuracy'].index(best_accuracy) + 1.5, best_accuracy - 0.02),
-                                arrowprops=dict(facecolor='black', shrink=0.05))
-
-                    ax2.set_ylim(0, 1)
-                    
-                    timef = elapsed_time / 60
-
-                    fig.suptitle(f"Tempo de treinamento: {timef:.2f} minutos", fontsize=16)
-
-                    plt.tight_layout()
-                    plt.show()
+                    plotter.displayPlot()
 
                 except:
                     pass
