@@ -10,6 +10,7 @@ import time
 from carr import carregarImgNomes as cin
 import modeloClass as mc
 from plotter import InitPlot
+import threading
 
 class CanvasIA:
 
@@ -154,8 +155,9 @@ class CanvasIA:
             except:
                 pass
 
-
+            
             if (self.bIni == True and erro1 == False and self.prov == False):
+                
                 self.bIni = False
 
                 start_time = time.time()
