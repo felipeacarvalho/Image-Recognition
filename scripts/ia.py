@@ -1,4 +1,4 @@
-#pip install matplotlib numpy keras tensorflow pillow
+# pip install matplotlib numpy keras tensorflow pillow opencv-python-headless
 
 import cv2
 import numpy as np
@@ -7,263 +7,141 @@ import tensorflow as tf
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-from carr import carregarImgNomes as cin
 import modeloClass as mc
-from plotter import InitPlot
 import threading
+import os
 
 class CanvasIA:
 
     def __init__(self):
         cv2.namedWindow('EoN')
 
-        ####
-
         self.r1X1, self.r1Y1 = 150, 390
         self.r1X2, self.r1Y2 = 250, 430
-
         self.r2X1, self.r2Y1 = 150, 490
         self.r2X2, self.r2Y2 = 250, 530
 
         self.b1X1, self.b1Y1 = 50, 375
         self.b1X2, self.b1Y2 = 125, 450
-
         self.b2X1, self.b2Y1 = 50, 475
         self.b2X2, self.b2Y2 = 125, 550
-
         self.b3X1, self.b3Y1 = 50, 50
         self.b3X2, self.b3Y2 = 270, 100
-
         self.b4X1, self.b4Y1 = 50, 150
         self.b4X2, self.b4Y2 = 270, 200
 
         self.fill2, self.fill3 = 1, 1
-
         self.mouseX, self.mouseY = -1, -1
-
-        ####
-
         self.bCar, self.bIni, self.bSal = False, False, False
+        self.treinamentoFinalizado = False
+        self.trainingThread = None
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        trainImgFolderPath = os.path.join(script_dir, '../img')
+        trainTxtFilePath = os.path.join(script_dir, '../labels.txt')
+
+        folderImgPath = os.path.join(script_dir, '../assets/folder95.png')
+        fileImgPath = os.path.join(script_dir, '../assets/file95.png')
+
+        self.pastaImg, self.txtNomes = trainImgFolderPath, trainTxtFilePath
         
-        self.bImg1 = cv2.resize(cv2.imread('Image-Recognition/assets/folder95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
-        self.bImg2 = cv2.resize(cv2.imread('Image-Recognition/assets/file95.png'), (75, 75), interpolation = cv2.INTER_LINEAR)
+        self.bImg1 = cv2.resize(cv2.imread(folderImgPath), (75, 75), interpolation=cv2.INTER_LINEAR)
+        self.bImg2 = cv2.resize(cv2.imread(fileImgPath), (75, 75), interpolation=cv2.INTER_LINEAR)
 
         cv2.setMouseCallback('EoN', self.mouseEv)
 
-        ####
-
     def mouseEv(self, evento, x, y, flags, param):
-        global pastaImg
-        global txtNomes
-
         if evento == cv2.EVENT_MOUSEMOVE:
             self.mouseX, self.mouseY = x, y
 
         if evento == cv2.EVENT_LBUTTONDOWN:
             if self.b1X1 <= x <= self.b1X2 and self.b1Y1 <= y <= self.b1Y2:
-                pastaImg = sd.expArq()
-
+                self.pastaImg = sd.expArq() or ""
             elif self.b2X1 <= x <= self.b2X2 and self.b2Y1 <= y <= self.b2Y2:
-                txtNomes = sa.expArq()
-
+                self.txtNomes = sa.expArq() or ""
             elif self.b3X1 <= x <= self.b3X2 and self.b3Y1 <= y <= self.b3Y2:
                 self.bIni = True
                 self.bSal = False
-                #self.prov = True
-
             elif self.b4X1 <= x <= self.b4X2 and self.b4Y1 <= y <= self.b4Y2:
                 self.bSal = True
                 self.bIni = False
 
-
-    ####
+    def treinModelo(self):
+        try:
+            imgs_treinamento, nomes_treinamento = mc.carregarDadosTreinamento(self.pastaImg, self.txtNomes)
+            self.modeloC = mc.construirModelo()
+            self.modeloC.compile(optimizer='adam', 
+                                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
+                                 metrics=['accuracy'])
+            history = self.modeloC.fit(imgs_treinamento, nomes_treinamento, epochs=20)
+            self.history = history.history
+            self.epochs_range = range(1, len(history.history['accuracy']) + 1)
+            self.treinamentoFinalizado = True
+        except Exception as e:
+            print("Erro durante execução do treinamento:", e)
 
     def exe(self):
-
         erro1 = False
-        self.prov = False
         self.treinamentoFinalizado = False
         erroDir1, erroDir2 = False, False
         desRetDir = False
         treinado, pesosSalvos = False, False
 
-        modelo = None
-
         while True:    
-
             largCanvas, altCanvas = 800, 600
-            canvas = np.ones((altCanvas, largCanvas, 3), dtype = np.uint8) * 24
+            canvas = np.ones((altCanvas, largCanvas, 3), dtype=np.uint8) * 24
 
             canvas[self.b1Y1:self.b1Y2, self.b1X1:self.b1X2] = self.bImg1
             canvas[self.b2Y1:self.b2Y2, self.b2X1:self.b2X2] = self.bImg2
 
-            if (self.b3X1 <= self.mouseX <= self.b3X2 and self.b3Y1 <= self.mouseY <= self.b3Y2):
-                self.fill2 = -1
+            self.fill2 = -1 if (self.b3X1 <= self.mouseX <= self.b3X2 and self.b3Y1 <= self.mouseY <= self.b3Y2) else 1
+            self.fill3 = -1 if (self.b4X1 <= self.mouseX <= self.b4X2 and self.b4Y1 <= self.mouseY <= self.b4Y2) else 1
 
-            else:
-                self.fill2 = 1
-
-            if (self.b4X1 <= self.mouseX <= self.b4X2 and self.b4Y1 <= self.mouseY <= self.b4Y2):
-                self.fill3 = -1
-
-            else:
-                self.fill3 = 1
-            
             cv2.rectangle(canvas, (self.b3X1, self.b3Y1), (self.b3X2, self.b3Y2), (15, 68, 252), int(self.fill2))
-            cv2.putText(canvas, ('Treinar rede'), (100, 80), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-
-            if((erroDir1 == True or erroDir2 == True) and desRetDir == True):
-                cv2.rectangle(canvas, (35, 365), (140, 560), (26, 21, 179), 2)
-                cv2.putText(canvas, ('Selecione os diretorios de treinamento'), (50, 590), cv2.FONT_HERSHEY_PLAIN, 1, (26, 21, 179), 1)
-            elif(erroDir1 == False and erroDir2 == False):
-                desRetDir = False
-
-            if(treinado == True):
-                cv2.putText(canvas, ('Treinamento concluido.'), (50, 130), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-            else:
-                pass
-
-            if(pesosSalvos == True):
-                cv2.putText(canvas, ('Pesos da rede salvos.'), (50, 230), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-            else:
-                pass
-
-            if (self.treinamentoFinalizado == True):
-
+            cv2.putText(canvas, 'Treinar rede', (100, 80), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+            if self.treinamentoFinalizado:
                 cv2.rectangle(canvas, (self.b4X1, self.b4Y1), (self.b4X2, self.b4Y2), (15, 68, 252), int(self.fill3))
-                cv2.putText(canvas, ('Salvar pesos da rede'), (60, 180), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+                cv2.putText(canvas, 'Salvar pesos da rede', (60, 180), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
-            try:
-                cv2.putText(canvas, (f'Diretorio selecionado: {pastaImg}'), (155, 420), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-            except:
-                pass
-
-            try:
-                cv2.putText(canvas, (f'Arquivo selecionado: {txtNomes}'), (155, 520), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-            except:
-                pass
+            cv2.putText(canvas, f'Diretorio selecionado: {self.pastaImg}', (155, 420), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+            cv2.putText(canvas, f'Arquivo selecionado: {self.txtNomes}', (155, 520), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
             cv2.imshow('EoN', canvas)
 
-            try:
-                pImg = pastaImg
-            except:
-                pass
-
-            try:
-                tNomes = txtNomes
-            except:
-                pass
-
-            
-            if (self.bIni == True and erro1 == False and self.prov == False):
-                
+            if self.bIni and not self.treinamentoFinalizado:
                 self.bIni = False
+                if not self.trainingThread or not self.trainingThread.is_alive():
+                    self.trainingThread = threading.Thread(target=self.treinModelo)
+                    self.trainingThread.start()
 
-                start_time = time.time()
-
-                try:
-                    pImg = pastaImg
-                    erroDir1 = False
-                except:
-                    pass
-
-                try:
-                    tNomes = txtNomes
-                    erroDir2 = False
-                except:
-                    pass
-
-                try:
-                    imgs_treinamento, nomes_treinamento = mc.carregarDadosTreinamento(pastaImg, txtNomes)
-                    #augData = mc.augData(imgs_treinamento, nomes_treinamento)
-                    modeloC = mc.construirModelo()
-                    modeloC.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
-                    history = modeloC.fit(imgs_treinamento, nomes_treinamento, epochs=20)
-                    #history = modeloC.fit(augData, epochs = 20)
-
-                    stTime = time.time()
-                    elapsed_time = time.time() - stTime
-                                    
-                    best_accuracy = max(history.history['accuracy'])
-                    lowest_loss = min(history.history['loss'])
-                    epochs_range = range(1, len(history.history['accuracy']) + 1)
-                    
-                    self.treinamentoFinalizado = True
-                    treinado = True
-
-                    plotter = InitPlot.displayPlot(history.history, epochs_range, elapsed_time)
-
-
-                except:
-                    erroDir1, erroDir2 = True, True
-                    desRetDir = True
-
-            elif (self.bSal == True and self.treinamentoFinalizado == True):
-
+            if self.bSal and self.treinamentoFinalizado:
                 self.bSal = False
-
-                modeloC.save_weights('Image-Recognition/weights/rede2.weights.h5')
-
-                print('Pesos salvos')
-
-                pesosSalvos = True
-
-            try:
-                if(any(pImg) and pImg != ''):
-                    erroDir1 = False
-            except:
-                pass
-
-            try:
-                if(any(tNomes) and tNomes != ''):
-                    erroDir2 = False
-            except:
-                pass
+                if hasattr(self, 'modeloC'):
+                    self.modeloC.save_weights('Image-Recognition/weights/rede2.weights.h5')
+                    print('Pesos salvos')
+                    pesosSalvos = True
+                else:
+                    print("Modelo não treinado. Não é possível salvar pesos.")
 
             key = cv2.waitKey(1) & 0xFF
-            if key == 32:
-                try:
+            if key == 32 and self.treinamentoFinalizado:
+                best_accuracy = max(self.history['accuracy'])
+                lowest_loss = min(self.history['loss'])
+                fig, ax1 = plt.subplots(figsize=(10, 6))
+                ax1.set_xlabel('Épocas')
+                ax1.set_ylabel('Erro', color='tab:red')
+                ax1.plot(self.epochs_range, self.history['loss'], label='Erro', color='tab:red')
+                ax1.tick_params(axis='y', labelcolor='tab:red')
+                ax2 = ax1.twinx()
+                ax2.set_ylabel('Precisão', color='tab:blue')
+                ax2.plot(self.epochs_range, self.history['accuracy'], label='Precisão', color='tab:blue')
+                ax2.tick_params(axis='y', labelcolor='tab:blue')
+                ax2.set_ylim(0, 1)
+                plt.tight_layout()
+                plt.show()
 
-                    best_accuracy = max(self.history['accuracy'])
-                    lowest_loss = min(self.history['loss'])
-
-                    fig, ax1 = plt.subplots(figsize=(10, 6))
-
-                    ax1.set_xlabel('Épocas')
-                    ax1.set_ylabel('Erro', color='tab:red')
-                    ax1.plot(self.epochs_range, self.history['loss'], label='Erro', color='tab:red')
-                    ax1.tick_params(axis='y', labelcolor='tab:red')
-                    ax1.set_title(f'Erro e Precisão no treinamento\nMenor erro: {lowest_loss:.4f}, Maior precisão: {best_accuracy:.4f}')
-
-                    ax1.annotate(f'Menor erro: {lowest_loss:.4f}', 
-                                xy=(self.history['loss'].index(lowest_loss) + 1, lowest_loss),
-                                xytext=(self.history['loss'].index(lowest_loss) + 1.5, lowest_loss + 0.02),
-                                arrowprops=dict(facecolor='black', shrink=0.05))
-                    
-                    ax2 = ax1.twinx()
-                    ax2.set_ylabel('Precisão', color='tab:blue')
-                    ax2.plot(self.epochs_range, self.history['accuracy'], label='Precisão', color='tab:blue')
-                    ax2.tick_params(axis='y', labelcolor='tab:blue')
-
-                    ax2.annotate(f'Maior precisão: {best_accuracy:.4f}', 
-                                xy=(self.history['accuracy'].index(best_accuracy) + 1, best_accuracy),
-                                xytext=(self.history['accuracy'].index(best_accuracy) + 1.5, best_accuracy - 0.02),
-                                arrowprops=dict(facecolor='black', shrink=0.05))
-
-                    ax2.set_ylim(0, 1)
-
-                    timef = self.elapsed_time / 60
-                    fig.suptitle(f"Tempo de treinamento: {timef:.2f} minutos", fontsize=16)
-
-                    plt.tight_layout()
-                    plt.show()
-
-
-                except:
-                    pass
-
-            elif key == 27:
+            elif key == 27:  
                 break
 
         cv2.destroyAllWindows()
