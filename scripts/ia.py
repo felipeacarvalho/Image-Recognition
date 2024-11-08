@@ -9,21 +9,33 @@ import matplotlib.pyplot as plt
 import time
 import modeloClass as mc
 import threading
-import os
+import os        
 
-class TrainingProgressCallback(tf.keras.callbacks.Callback):
-    def __init__(self, canvasIA, numEpocas):
+class EpochProgressCallback(tf.keras.callbacks.Callback):
+    def __init__(self, canvas):
         super().__init__()
-        self.canvasIA = canvasIA
-        self.numEpocas = numEpocas
+        self.canvas = canvas
+
+    def on_epoch_begin(self, epoch, logs=None):
+        self.canvas.current_epoch = epoch + 1
+        self.canvas.num_epochs = self.params['epochs']
 
     def on_epoch_end(self, epoch, logs=None):
-        razaoProgresso = (epoch + 1) / self.numEpocas
-        self.canvasIA.updateProgress(razaoProgresso)
+        if self.canvas.num_epochs > 0:
+            progress_ratio = self.canvas.current_epoch / self.canvas.num_epochs
+        else:
+            progress_ratio = 0
+
+        nSegmentos = int(progress_ratio * 20)
+
+        print(f"Razão de progresso: {progress_ratio:.2f}, Segmentos: {nSegmentos}")
+
+        self.canvas.drawProgressBar(self.canvas.progressbarSprite, progress_ratio)
 
 class CanvasIA:
 
     def __init__(self):
+
         cv2.namedWindow('EoN')
 
         self.cord1B1 = (50, 50)
@@ -39,6 +51,9 @@ class CanvasIA:
         self.cord1B4 = (50, 475)
         self.cord2B4 = (125, 550)
 
+        self.cord1BP = (300, 150)
+        self.cord2BP = (self.cord1BP[0]+368, self.cord1BP[1]+58)
+
         self.tempoTreinamento = None
         self.nomeOtimizador = None
         self.botao1Fill, self.botao2Fill = 1, 1
@@ -46,6 +61,9 @@ class CanvasIA:
         self.botaoIniciarTreinamento, self.botaoSalvarPesos = False, False
         self.treinamentoFinalizado = False
         self.trainingThread = None
+
+        self.num_epochs = 0
+        self.current_epoch = 0
 
         diretorioImagem = os.path.dirname(os.path.abspath(__file__))
 
@@ -87,23 +105,63 @@ class CanvasIA:
                 self.txtNomes = sa.expArq() or ""
 
     def drawProgressBar(self, canvas, razaoProgresso):
-        barX, barY = 126, 271
+        barX, barY = 300, 150  
 
-        canvas[barY:barY+self.progressbarSprite.shape[0], barX:barX+self.progressbarSprite.shape[1]] = self.progressbarSprite
+        print(f"Canvas dimensions: {canvas.shape}")
+
+        if self.progressbarSprite is None or self.progressbarSprite.shape[0] == 0 or self.progressbarSprite.shape[1] == 0:
+            print("Error: Invalid progress bar sprite dimensions.")
+            return
+
+        bar_height, bar_width = self.progressbarSprite.shape[:2]
+
+
+        print(f"Placing progress bar at ({barX}, {barY}) with size ({bar_width}, {bar_height})")
+
+        if barX + bar_width > canvas.shape[1] or barY + bar_height > canvas.shape[0]:
+            print(f"Error: progressbarSprite does not fit within the canvas at coordinates ({barX}, {barY}).")
+            return
+
+        try:
+            canvas[barY:barY + bar_height, barX:barX + bar_width] = self.progressbarSprite
+        except ValueError as e:
+            print("Error during placement of progress bar:", e)
+            return
 
         nSegmentos = int(razaoProgresso * 20)
-        largSegmento = self.progressSegmentSprite.shape[1]
+        largSegmento = 15
+        altSegmento = 29
+        distSegmento = 2
+
+        posXInicialSegmento = 316
+        posYInicialSegmento = 165
+
+        print(f"First segment position: ({posXInicialSegmento}, {posYInicialSegmento})")
+        print(f"Number of segments to draw: {nSegmentos}")
+
+        if self.progressSegmentSprite is None or \
+        self.progressSegmentSprite.shape[0] < altSegmento or \
+        self.progressSegmentSprite.shape[1] < largSegmento:
+            print("Error: Invalid progress segment sprite dimensions.")
+            return
 
         for i in range(nSegmentos):
-            posX = barX + i * largSegmento
-            canvas[barY:barY + self.progressSegmentSprite.shape[0], posX:posX + largSegmento] = self.progressSegmentSprite
+            posX = posXInicialSegmento + i * (largSegmento + distSegmento)
+            posY = posYInicialSegmento
 
-    def updateProgress(self, razaoProgresso):
-        largCanvas, altCanvas = 800, 600
-        canvas = np.ones((altCanvas, largCanvas, 3), dtype=np.uint8) * 24
-        self.drawProgressBar(canvas, razaoProgresso)
-        cv2.imshow('EoN', canvas)
-        cv2.waitKey(1)
+            print(f"Segment {i+1} position: ({posX}, {posY})")
+
+            if posX + largSegmento > canvas.shape[1] or posY + altSegmento > canvas.shape[0]:
+                print(f"Skipping segment {i+1}: Exceeds canvas bounds at ({posX}, {posY}).")
+                continue
+
+            try:
+                canvas[posY:posY + altSegmento, posX:posX + largSegmento] = \
+                    self.progressSegmentSprite[0:altSegmento, 0:largSegmento]
+            except ValueError as e:
+                print(f"Error during placement of segment {i+1}:", e)
+                break
+
 
     def treinModelo(self):
         try:
@@ -116,37 +174,54 @@ class CanvasIA:
                                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False), 
                                  metrics=['accuracy'])
 
-            numEpocas = 3
-            progress_callback = TrainingProgressCallback(self, numEpocas)
+            self.num_epochs = 25
+            epoch_callback = EpochProgressCallback(self)
 
             history = self.modeloConstruido.fit(
                 imgsTreinamento, 
                 nomesTreinamento, 
-                epochs=numEpocas, 
-                callbacks=[progress_callback]
+                epochs=self.num_epochs,
+                callbacks=[epoch_callback]
             )
+
+            print(f'Treinamento completo. Último progresso: {self.epoch_recorder.prog}')
 
             self.history = history.history
             self.epocasTreinamento = range(1, len(history.history['accuracy']) + 1)
             self.tempoTreinamento = time.time() - tInicio
             self.treinamentoFinalizado = True
 
+
         except Exception as e:
             print("Erro durante execução do treinamento:", e)
 
     def exe(self):
         self.treinamentoFinalizado = False
+        desBarraProgresso = False
 
         while True:    
+            if self.botaoIniciarTreinamento:
+                desBarraProgresso = True
+
             largCanvas, altCanvas = 900, 600
             canvas = np.ones((altCanvas, largCanvas, 3), dtype=np.uint8) * 24
 
             canvas[self.cord1B3[1]:self.cord2B3[1], self.cord1B3[0]:self.cord2B3[0]] = self.bImg1
             canvas[self.cord1B4[1]:self.cord2B4[1], self.cord1B4[0]:self.cord2B4[0]] = self.bImg2
 
+
+            if desBarraProgresso and not self.treinamentoFinalizado:
+                if self.num_epochs > 0:
+                    progress_ratio = self.current_epoch / self.num_epochs
+                else:
+                    progress_ratio = 0
+                self.drawProgressBar(canvas, progress_ratio)
+
+            if desBarraProgresso:
+                canvas[self.cord1BP[1]:self.cord2BP[1], self.cord1BP[0]:self.cord2BP[0]] = self.progressbarSprite
+
             self.botao1Fill = -1 if (self.cord1B1[0] <= self.mouseX <= self.cord2B1[0]  and self.cord1B1[1] <= self.mouseY <= self.cord2B1[1]) else 1
             self.botao2Fill = -1 if (self.cord1B2[0] <= self.mouseX <= self.cord2B2[0] and self.cord1B2[1] <= self.mouseY <= self.cord2B2[1]) else 1
-
 
             self.createButton(canvas, self.cord1B1, self.cord2B1, 'Treinar rede', 100, 80, self.botao1Fill)
 

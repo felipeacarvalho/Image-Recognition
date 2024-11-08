@@ -23,7 +23,7 @@ class Camera:
         self.cobInputAt = False
         self.cobInput = ''
 
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
 
         cv2.namedWindow('PBCamera')
 
@@ -129,7 +129,6 @@ class Camera:
                     #self.cobInput = ''
                 elif 32<= key <= 126:
                     self.cobInput += chr(key)
-#key == ord('f')
             if key == ord('f'):
                 i = 1
                 cont = 1
@@ -146,14 +145,17 @@ class Camera:
                     #nomeImg = 'img{}.png'.format(contImg)
                     cv2.imwrite(os.path.join(dir, nomeImg), PBCamera)
 
-                    arduino.write('2'.encode())
-                    arduino.flush()
+                    try:
+                        arduino.write('2'.encode())
+                        arduino.flush()
+                    except:
+                        pass
 
                     print('{} escrito.'.format(nomeImg))
 
                     contImg += 1
                     i = 0
-                    time.sleep(0.5)
+                    time.sleep(0.7)
                         
                 except:
                     nomeImg = 'default' + '{}.png'.format(contImg+1)
