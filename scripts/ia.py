@@ -10,7 +10,7 @@ import time
 import modeloClass as mc
 import threading
 import os        
-
+'''
 class EpochProgressCallback(tf.keras.callbacks.Callback):
     def __init__(self, canvas):
         super().__init__()
@@ -31,7 +31,7 @@ class EpochProgressCallback(tf.keras.callbacks.Callback):
         print(f"Razão de progresso: {progress_ratio:.2f}, Segmentos: {nSegmentos}")
 
         self.canvas.drawProgressBar(self.canvas.progressbarSprite, progress_ratio)
-
+'''
 class CanvasIA:
 
     def __init__(self):
@@ -103,7 +103,8 @@ class CanvasIA:
                 self.pastaImg = sd.expArq() or ""
             elif self.cord1B4[0] <= x <= self.cord2B4[0] and self.cord1B4[1] <= y <= self.cord2B4[1]:
                 self.txtNomes = sa.expArq() or ""
-
+    '''
+    TODO
     def drawProgressBar(self, canvas, razaoProgresso):
         barX, barY = 300, 150  
 
@@ -161,7 +162,7 @@ class CanvasIA:
             except ValueError as e:
                 print(f"Error during placement of segment {i+1}:", e)
                 break
-
+    '''
 
     def treinModelo(self):
         try:
@@ -175,6 +176,7 @@ class CanvasIA:
                                  metrics=['accuracy'])
 
             self.num_epochs = 25
+            '''
             epoch_callback = EpochProgressCallback(self)
 
             history = self.modeloConstruido.fit(
@@ -182,6 +184,12 @@ class CanvasIA:
                 nomesTreinamento, 
                 epochs=self.num_epochs,
                 callbacks=[epoch_callback]
+            )
+            '''
+            history = self.modeloConstruido.fit(
+                imgsTreinamento, 
+                nomesTreinamento, 
+                epochs=self.num_epochs
             )
 
             print(f'Treinamento completo. Último progresso: {self.epoch_recorder.prog}')
@@ -209,7 +217,8 @@ class CanvasIA:
             canvas[self.cord1B3[1]:self.cord2B3[1], self.cord1B3[0]:self.cord2B3[0]] = self.bImg1
             canvas[self.cord1B4[1]:self.cord2B4[1], self.cord1B4[0]:self.cord2B4[0]] = self.bImg2
 
-
+            '''
+            TODO
             if desBarraProgresso and not self.treinamentoFinalizado:
                 if self.num_epochs > 0:
                     progress_ratio = self.current_epoch / self.num_epochs
@@ -219,6 +228,7 @@ class CanvasIA:
 
             if desBarraProgresso:
                 canvas[self.cord1BP[1]:self.cord2BP[1], self.cord1BP[0]:self.cord2BP[0]] = self.progressbarSprite
+            '''
 
             self.botao1Fill = -1 if (self.cord1B1[0] <= self.mouseX <= self.cord2B1[0]  and self.cord1B1[1] <= self.mouseY <= self.cord2B1[1]) else 1
             self.botao2Fill = -1 if (self.cord1B2[0] <= self.mouseX <= self.cord2B2[0] and self.cord1B2[1] <= self.mouseY <= self.cord2B2[1]) else 1
