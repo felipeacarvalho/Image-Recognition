@@ -192,7 +192,7 @@ class CanvasIA:
                 epochs=self.num_epochs
             )
 
-            print(f'Treinamento completo. Último progresso: {self.epoch_recorder.prog}')
+            self.modeloConstruido.save_weights('weights/garrafas.weights.h5')
 
             self.history = history.history
             self.epocasTreinamento = range(1, len(history.history['accuracy']) + 1)
@@ -252,7 +252,7 @@ class CanvasIA:
             if self.botaoSalvarPesos and self.treinamentoFinalizado:
                 self.botaoSalvarPesos = False
                 if hasattr(self, 'modeloConstruido'):
-                    self.modeloConstruido.save_weights('Image-Recognition/weights/rede2.weights.h5')
+                    self.modeloConstruido.save_weights('Image-Recognition/weights/garrafas.weights.h5')
                     print('Pesos salvos')
                     pesosSalvos = True
                 else:

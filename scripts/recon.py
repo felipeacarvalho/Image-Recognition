@@ -159,7 +159,8 @@ class Camera:
 
                     previsao = mc.predict(modelo, imgProc)
                     classe_prev = np.argmax(previsao)
-                    nomes_classes = ['Felipe (oculos)', 'Felipe (s/ oculos)', 'Fernando (oculos)', 'Fernando (s/ oculos)', 'Gabriel S.', 'Gabriel D. (oculos)', 'Gabriel D. (s/ oculos)']
+                    #nomes_classes = ['Felipe (oculos)', 'Felipe (s/ oculos)', 'Fernando (oculos)', 'Fernando (s/ oculos)', 'Gabriel S.', 'Gabriel D. (oculos)', 'Gabriel D. (s/ oculos)']
+                    nomes_classes = ['Garrafa de Coca-Cola', 'Garrafa de Guaraná']
                     nome_prev = nomes_classes[classe_prev]
 
                     print(f"Reconhecimento: {nome_prev}")

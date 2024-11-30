@@ -23,7 +23,7 @@ def construirModelo():
         tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(7, activation='softmax')
+        tf.keras.layers.Dense(2, activation='softmax')
     ])
 
     return modelo
