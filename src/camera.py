@@ -2,7 +2,7 @@ import cv2
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import Label
-from selectTk import SelecDir as sd
+from lib.commons import SelecDir as sd
 import os
 import time
 import numpy as np

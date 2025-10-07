@@ -2,12 +2,12 @@
 
 import cv2
 import numpy as np
-from selectTk import SelecArq as sa, SelecDir as sd
+from lib.commons import SelecArq as sa, SelecDir as sd
 import tensorflow as tf
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-import modeloClass as mc
+import lib.modeloLib as mc
 import threading
 import os        
 '''
@@ -68,7 +68,7 @@ class CanvasIA:
         diretorioImagem = os.path.dirname(os.path.abspath(__file__))
 
         trainImgFolderPath = os.path.join(diretorioImagem, '../img')
-        trainTxtFilePath = os.path.join(diretorioImagem, '../labels.txt')
+        trainTxtFilePath = os.path.join(diretorioImagem, '../labels/labels.txt')
         folderImgPath = os.path.join(diretorioImagem, '../assets/folder95.png')
         fileImgPath = os.path.join(diretorioImagem, '../assets/file95.png')
         progressbarImgPath = os.path.join(diretorioImagem, '../assets/progressbar95.png')
@@ -162,11 +162,15 @@ class CanvasIA:
             except ValueError as e:
                 print(f"Error during placement of segment {i+1}:", e)
                 break
+                aaa
     '''
 
     def treinModelo(self):
         try:
             tInicio = time.time()
+
+            tf.config.threading.set_intra_op_parallelism_threads(8)
+            tf.config.threading.set_inter_op_parallelism_threads(2)
 
             imgsTreinamento, nomesTreinamento = mc.carregarDadosTreinamento(self.pastaImg, self.txtNomes)
             self.modeloConstruido = mc.construirModelo()

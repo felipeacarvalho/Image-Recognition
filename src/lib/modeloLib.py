@@ -1,6 +1,5 @@
 import tensorflow as tf
-from carr import carregarImgNomes as cin
-
+from .commons import carregarImgNomes as cin
 
 def carregarDadosTreinamento(pastaImg, txtNomes):
     imgs_treinamento, nomes_treinamento = cin(pastaImg, txtNomes)
@@ -42,7 +41,7 @@ def predict(modelo, imgs_treinamento):
     return previsao
 
 
-def treinData(imgs_treinamento, nomes_treinamento, batch_size=32):
+def treinData(imgs_treinamento, nomes_treinamento, batch_size=2):
     '''
     data_gen = tf.keras.preprocessing.image.ImageDataGenerator(
         rotation_range=20,      
@@ -60,6 +59,6 @@ def treinData(imgs_treinamento, nomes_treinamento, batch_size=32):
         rotation_range=10     
     )
 
-
     augData = data_gen.flow(imgs_treinamento, nomes_treinamento, batch_size=batch_size)
+    
     return augData

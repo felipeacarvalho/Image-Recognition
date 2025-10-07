@@ -6,12 +6,12 @@ import cv2
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import Label
-from selectTk import SelecArq as sa
+from lib.commons import SelecArq as sa
 import tensorflow as tf
 import os
 import time
 import numpy as np
-import modeloClass as mc
+import lib.modeloLib as mc
 
 class Camera:
 
